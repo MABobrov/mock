@@ -29,46 +29,52 @@ def cancellation_opty():
     }
     logging.debug("\n\n %s \n\n", request.json)
     return jsonify(response)
-    
-    
+tokens_visited = {}
 @app.route("/Services/WidgetTest/api/Widget/ApplicationBankInfo", methods=["POST"])
 def application_bank_info():
+    data = request.json
+    online_token = data["onlineToken"]
 
-    online_token = request.json["onlineToken"]
+    if online_token not in tokens_visited:
+        tokens_visited[online_token] = 0
 
-    response = {
+    tokens_visited[online_token] += 1
+
+    basic_response = {
         "onlineToken": online_token,
         "step": 4,
         "waitingStep": 5,
         "banksInfo": [
             {
                 "bankId": 54,
-                "status": 8,
+                "status": 2 if tokens_visited[online_token] > 1 else 8,
                 "statusDescription": "",
                 "decisions": [
                     {
                         "decisionId": 0,
                         "offerId": 0,
-                        "numberKD": generate_unique_kd_number(),
+                        "numberKD": "1335300708",
                         "productCode": "TEST",
                         "productName": "Денум Тест",
-                        "sumCredit": 15000.00,
-                        "sumGoods": 15000.00,
+                        "sumCredit": 15000.0000,
+                        "sumGoods": 15000.0000,
                         "term": 4,
-                        "initPay": 0.00,
-                        "monthlyPayment": 4078.00,
+                        "initPay": 0.0000,
+                        "monthlyPayment": 4078.0000,
                         "selected": True,
                         "smsSigning": True,
                         "deliveryType": 0,
                         "amountSMSinform": 0.00,
-                        "balanceCreditLine": 0.00,
+                        "balanceCreditLine": 0.0000,
                         "isCreditLine": False
-                    }],
-                "needScans": True,
+                    }
+                ],
+                "needScans": tokens_visited[online_token] == 1,
                 "isSelectedApproval": False,
                 "isBlocked": False,
                 "isFakeDecision": False
-            }],
+            }
+        ],
         "additionalInfo": True,
         "haveProblemWithProcessApp": False,
         "messageProblemWithProcessApp": None,
@@ -77,9 +83,9 @@ def application_bank_info():
         "error": None,
         "errorCode": None
     }
-    logging.debug("\n\n %s \n\n", request.json)
-    return jsonify(response)
 
+    return jsonify(basic_response)
+    
 @app.route("/Services/WidgetTest/api/Widget/CheckScans", methods=["POST"])
 def check_scans():
     logging.info("\n\n %s \n\n", request.json)
