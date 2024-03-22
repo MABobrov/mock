@@ -1,36 +1,83 @@
+
 import uuid
 import random
 import logging
 from flask import Flask, request, jsonify
+import functools
+from datetime import datetime
 
+def log_request_response(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        request_data = request.json
+        logging.info("Request time: %s", datetime.now())
+        logging.info("Request endpoint: %s", request.url)
+        logging.info("Request method: %s", request.method)
+        logging.info("Request json:\n%s", request_data)
+
+        response = fn(*args, **kwargs)
+        response_data = response.get_json()
+
+        logging.info("Response time: %s", datetime.now())
+        logging.info("Response status code: %s", response.status_code)
+        logging.info("Response json:\n%s", response_data)
+
+        return response
+
+    return wrapper
 app = Flask(__name__)
 
 logging.basicConfig(level=logging.DEBUG)
+logging.getLogger("flask").setLevel(logging.DEBUG)
 
 def generate_unique_token() -> str:
     return str(uuid.uuid4())
 
 def generate_unique_kd_number() -> str:
     return "".join(random.choices("0123456789", k=10))
+    
+@app.route("/Services/WidgetTest/api/Widget/CreateApplication", methods=["POST"])
+@log_request_response
+def create_app():
+    
+    online_token = generate_unique_token()
 
-@app.route("/Services/WidgetTest/api/Widget/Cancellation", methods=["POST"])
-def cancellation_opty():
-
-    online_token = request.json["onlineToken"]
     response = {
+        "client": None,
         "onlineToken": online_token,
-        "step": 6,
-        "waitingStep": None,
+        "step": 0,
+        "waitingStep": 1,
         "changeButton": None,
         "isNeedJuicySessionId": False,
         "isSuccess": True,
         "error": None,
         "errorCode": None
     }
-    logging.debug("\n\n %s \n\n", request.json)
+
     return jsonify(response)
+
+@app.route("/Services/WidgetTest/api/Widget/SendFullApplication", methods=["POST"])
+@log_request_response
+def send_full():
+    online_token = request.json["onlineToken"]
+
+    response = {
+        "client": None,
+        "onlineToken": online_token,
+        "step": 4,
+        "waitingStep": 5,
+        "changeButton": None,
+        "isNeedJuicySessionId": False,
+        "isSuccess": True,
+        "error": None,
+        "errorCode": None
+    }
+    return jsonify(response)
+    
+
 tokens_visited = {}
 @app.route("/Services/WidgetTest/api/Widget/ApplicationBankInfo", methods=["POST"])
+@log_request_response
 def application_bank_info():
     data = request.json
     online_token = data["onlineToken"]
@@ -47,7 +94,7 @@ def application_bank_info():
         "banksInfo": [
             {
                 "bankId": 54,
-                "status": 2 if tokens_visited[online_token] > 1 else 8,
+                "status": 2 if tokens_visited[online_token] > 3 else 8,
                 "statusDescription": "",
                 "decisions": [
                     {
@@ -87,8 +134,9 @@ def application_bank_info():
     return jsonify(basic_response)
     
 @app.route("/Services/WidgetTest/api/Widget/CheckScans", methods=["POST"])
+@log_request_response
 def check_scans():
-    logging.info("\n\n %s \n\n", request.json)
+
     online_token = request.json["onlineToken"]
 
     response = {
@@ -135,9 +183,11 @@ def check_scans():
         }
     return jsonify(response)
 
+
 @app.route("/Services/WidgetTest/api/Widget/SaveScan", methods=["POST"])
+@log_request_response
 def save_scan():
-    logging.info("\n\n %s \n\n", request.json)
+
     online_token = request.json["onlineToken"]
 
     response = {
@@ -153,8 +203,9 @@ def save_scan():
     return jsonify(response)
 
 @app.route("/Services/WidgetTest/api/Widget/SendScans", methods=["POST"])
+@log_request_response
 def send_scans():
-    logging.info("\n\n %s \n\n", request.json)
+
     online_token = request.json["onlineToken"]
 
     response = {
@@ -167,47 +218,14 @@ def send_scans():
     }
     return jsonify(response)
 
-@app.route("/Services/WidgetTest/api/Widget/CreateApplication", methods=["POST"])
-def create_app():
-    
-    online_token = generate_unique_token()
 
-    response = {
-        "client": None,
-        "onlineToken": online_token,
-        "step": 0,
-        "waitingStep": 1,
-        "changeButton": None,
-        "isNeedJuicySessionId": False,
-        "isSuccess": True,
-        "error": None,
-        "errorCode": None
-    }
-    logging.info("\n\n %s \n\n", request.json)
-    return jsonify(response)
 
-@app.route("/Services/WidgetTest/api/Widget/SendFullApplication", methods=["POST"])
-def send_full():
-    logging.info("\n\n %s \n\n", request.json)
-    online_token = request.json["onlineToken"]
-
-    response = {
-        "client": None,
-        "onlineToken": online_token,
-        "step": 4,
-        "waitingStep": 5,
-        "changeButton": None,
-        "isNeedJuicySessionId": False,
-        "isSuccess": True,
-        "error": None,
-        "errorCode": None
-    }
-    return jsonify(response)
 
 @app.route("/Services/WidgetTest/api/Widget/RepeatSendSmsCode", methods=["POST"])
+@log_request_response
 def repeat_send_sms_code():
     online_token = request.json["onlineToken"]
-    logging.info("\n\n %s \n\n", request.json)
+    
     data = {
         "countAccessSendSmsCode": 0,
         "onlineToken": online_token,
@@ -222,9 +240,10 @@ def repeat_send_sms_code():
     return jsonify(data)
 
 @app.route("/Services/WidgetTest/api/Widget/SetApplicationApproval", methods=["POST"])
+@log_request_response
 def set_application_approval():
+
     online_token = request.json["onlineToken"]
-    logging.info("\n\n %s \n\n", request.json)
     data = {
         "documentLink": "https://testonline.fconnect.ru/Services/WidgetTest/api/WidgetDocument/GetBankDocumentsPackage?onlineToken="+online_token,
         "applicationClosingType": 2,
@@ -242,9 +261,11 @@ def set_application_approval():
     return jsonify(data)
 
 @app.route("/Services/WidgetTest/api/Widget/SaveSmsCode", methods=["POST"])
+@log_request_response
 def save_sms_code():
+
     online_token = request.json["onlineToken"]
-    logging.info("\n\n %s \n\n", request.json)
+
     data = {
         "isSaveSmsCodeSuccess": True,
         "countAccessSendSmsCode": 2,
@@ -261,9 +282,11 @@ def save_sms_code():
     return jsonify(data)
 
 @app.route("/Services/WidgetTest/api/Widget/CheckSmsCode", methods=["POST"])
+@log_request_response
 def check_sms_code():
+
     online_token = request.json["onlineToken"]
-    logging.info("\n\n %s \n\n", request.json)
+    
     data = {
         "statusSmsCode": 1,
         "onlineToken": online_token,
@@ -276,6 +299,26 @@ def check_sms_code():
         "errorCode": None
     }
     return jsonify(data)
+
+
+@app.route("/Services/WidgetTest/api/Widget/Cancellation", methods=["POST"])
+@log_request_response
+def cancellation_opty():
+
+    online_token = request.json["onlineToken"]
+    response = {
+        "onlineToken": online_token,
+        "step": 6,
+        "waitingStep": None,
+        "changeButton": None,
+        "isNeedJuicySessionId": False,
+        "isSuccess": True,
+        "error": None,
+        "errorCode": None
+    }
+   
+    return jsonify(response)
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=8080)
